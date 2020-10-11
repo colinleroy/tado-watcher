@@ -26,6 +26,8 @@ fi
 MYSELF=`realpath $0`
 SYSDIR=`dirname $MYSELF`
 
+source /etc/defaults/tado-watcher
+
 DESC="tado-watcher daemon"
 NAME="tado-watcher"
 DAEMON=python3
