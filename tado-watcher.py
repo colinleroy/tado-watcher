@@ -56,7 +56,7 @@ def manual_setting_alert(zone, state, pb):
     if zone["id"] not in manual_alerts or time.time() - manual_alerts[zone["id"]] > 3600:
         alert = "Zone {} has been manually set to {}".format(
             zone["name"], state["overlay"]["setting"]["temperature"]["celsius"])
-        syslog.sylog(alert)
+        syslog.syslog(alert)
         push_alert(alert, pb)
         manual_alerts[zone["id"]] = time.time()
 
@@ -65,7 +65,7 @@ def offline_alert(zone, state, pb):
     if zone["id"] not in offline_alerts or time.time() - offline_alerts[zone["id"]] > 3600:
         alert = "Zone {} is not online: {}".format(
             zone["name"], state["link"]["state"])
-        syslog.sylog(alert)
+        syslog.syslog(alert)
         push_alert(alert, pb)
         offline_alerts[zone["id"]] = time.time()
 
