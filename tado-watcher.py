@@ -26,14 +26,29 @@ def main(username, password, pushbullettoken):
     pb = Pushbullet(pushbullettoken)
 
     while True:
+        error = False
         zones = t.get_zones()
         for zone in zones:
-            if zone["type"] == "HEATING":
+            if "type" not in zone:
+                error = True
+            elif zone["type"] == "HEATING":
                 state = t.get_state(zone["id"])
-                if state["overlayType"] == "MANUAL":
-                    manual_setting_alert(zone, state, pb)
-                if state["link"]["state"] != "ONLINE":
-                    offline_alert(zone, state, pb)
+                if "overlayType" not in state:
+                    error = True;
+                if "link" not in state or "state" not in state["link"]:
+                    error = True;
+                if error == False:
+                    if state["overlayType"] == "MANUAL":
+                        manual_setting_alert(zone, state, pb)
+                    if state["link"]["state"] != "ONLINE":
+                        offline_alert(zone, state, pb)
+                else:
+                    break;
+        if error == True:
+            #Reset API
+            syslog.syslog("refreshing access token ({})".format(zones))
+            t = libtado.api.Tado(username, password, secret)
+
         time.sleep(300)
 
 
