@@ -1,0 +1,68 @@
+#!/bin/sh
+# kFreeBSD do not accept scripts as interpreters, using #!/bin/sh and sourcing.
+if [ true != "$INIT_D_SCRIPT_SOURCED" ] ; then
+    set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
+fi
+### BEGIN INIT INFO
+# Provides:          tado-watcher-daemon
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Example initscript
+# Description:       This file should be used to construct scripts to be
+#                    placed in /etc/init.d.  This example start a
+#                    single forking daemon capable of writing a pid
+#                    file.  To get other behavoirs, implemend
+#                    do_start(), do_stop() or other functions to
+#                    override the defaults in /lib/init/init-d-script.
+### END INIT INFO
+
+# Author: Colin Leroy <colin@colino.net>
+#
+# Please remove the "Author" lines above and replace them
+# with your own name if you copy and modify this script.
+
+MYSELF=`realpath $0`
+SYSDIR=`dirname $MYSELF`
+
+DESC="tado-watcher daemon"
+NAME="tado-watcher"
+DAEMON=python3
+DAEMON_OPTS="$SYSDIR/tado-watcher.py"
+PIDFILE=$SYSDIR/tado-watcher.pid
+START_OPTS="--start --background --make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON} ${DAEMON_OPTS}"
+STOP_OPTS="--stop --pidfile ${PIDFILE}"
+
+echo $SYSDIR
+test -x $DAEMON || exit 0
+
+set -e
+
+case "$1" in
+    start)
+        echo -n "Starting ${DESC}: "
+        start-stop-daemon $START_OPTS
+        echo "$NAME."
+        ;;
+    stop)
+        echo -n "Stopping $DESC: "
+        start-stop-daemon $STOP_OPTS
+        echo "$NAME."
+        rm -f $PIDFILE
+        ;;
+    restart|force-reload)
+        echo -n "Restarting $DESC: "
+        start-stop-daemon $STOP_OPTS
+        sleep 1
+        start-stop-daemon $START_OPTS >> $LOGFILE
+        echo "$NAME."
+        ;;
+    *)
+        N=/etc/init.d/$NAME
+        echo "Usage: $N {start|stop|restart|force-reload}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
