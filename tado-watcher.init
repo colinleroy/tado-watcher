@@ -26,11 +26,11 @@ fi
 MYSELF=`realpath $0`
 SYSDIR=`dirname $MYSELF`
 
-source /etc/defaults/tado-watcher
+. /etc/default/tado-watcher
 
 DESC="tado-watcher daemon"
 NAME="tado-watcher"
-DAEMON=python3
+DAEMON=/usr/bin/python3
 DAEMON_OPTS="$SYSDIR/tado-watcher.py"
 PIDFILE=$SYSDIR/tado-watcher.pid
 START_OPTS="--start --background --make-pidfile --pidfile ${PIDFILE} --exec ${DAEMON} ${DAEMON_OPTS}"
