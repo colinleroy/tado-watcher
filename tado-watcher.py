@@ -6,13 +6,17 @@ import requests
 import re
 import time
 import syslog
+import pprint
 from pushbullet import Pushbullet
+
+hygro_threshold = 70.0
 
 @click.command()
 @click.option('--username', '-u', required=True, envvar='TADO_USERNAME', help='Tado username')
 @click.option('--password', '-p', required=True, envvar='TADO_PASSWORD', help='Tado password')
 @click.option('--pushbullettoken', '-t', required=True, envvar='PUSHBULLET_TOKEN', help='Pushbullet token for pushing alerts')
-def main(username, password, pushbullettoken):
+@click.option('--debug', '-d', required=False, default=False, is_flag=True, help='Be verbose')
+def main(username, password, pushbullettoken, debug):
     """
     This script provides a command line client for the Tado API.
     You can use the environment variables TADO_USERNAME and TADO_PASSWORD
@@ -25,14 +29,20 @@ def main(username, password, pushbullettoken):
     
     pb = Pushbullet(pushbullettoken)
 
+    pp = pprint.PrettyPrinter(indent=4)
+
     while True:
         error = False
         zones = t.get_zones()
+        if debug == True:
+            pp.pprint(zones)
         for zone in zones:
             if "type" not in zone:
                 error = True
             elif zone["type"] == "HEATING":
                 state = t.get_state(zone["id"])
+                if debug == True:
+                    pp.pprint(state)
                 if "overlayType" not in state:
                     error = True;
                 if "link" not in state or "state" not in state["link"]:
@@ -42,12 +52,18 @@ def main(username, password, pushbullettoken):
                         manual_setting_alert(zone, state, pb)
                     if state["link"]["state"] != "ONLINE":
                         offline_alert(zone, state, pb)
+                if "sensorDataPoints" in state and "humidity" in state["sensorDataPoints"]:
+                    if state["sensorDataPoints"]["humidity"]["percentage"] > hygro_threshold:
+                        hygro_alert(zone, state, pb)
                 else:
                     break;
         if error == True:
             #Reset API
             syslog.syslog("refreshing access token ({})".format(zones))
             t = libtado.api.Tado(username, password, secret)
+
+        if debug == True:
+            exit()
 
         time.sleep(300)
 
@@ -75,13 +91,22 @@ def manual_setting_alert(zone, state, pb):
         push_alert(alert, pb)
         manual_alerts[zone["id"]] = time.time()
 
+hygro_alerts = {}
+def hygro_alert(zone, state, pb):
+    if zone["id"] not in hygro_alerts or time.time() - hygro_alerts[zone["id"]] > 3600:
+        alert = "Zone {} hygrometry over threshold: {}%".format(
+            zone["name"], state["sensorDataPoints"]["humidity"]["percentage"])
+        syslog.syslog(alert)
+        push_alert(alert, pb)
+        hygro_alerts[zone["id"]] = time.time()
+
 offline_alerts = {}
 def offline_alert(zone, state, pb):
     if zone["id"] not in offline_alerts or time.time() - offline_alerts[zone["id"]] > 3600:
         alert = "Zone {} is not online: {}".format(
             zone["name"], state["link"]["state"])
         syslog.syslog(alert)
-        push_alert(alert, pb)
+        #push_alert(alert, pb)
         offline_alerts[zone["id"]] = time.time()
 
 def push_alert(alert, pb):
