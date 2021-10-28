@@ -9,7 +9,7 @@ import syslog
 import pprint
 from pushbullet import Pushbullet
 
-hygro_threshold = 70.0
+hygro_threshold = 75.0
 
 @click.command()
 @click.option('--username', '-u', required=True, envvar='TADO_USERNAME', help='Tado username')
@@ -48,7 +48,7 @@ def main(username, password, pushbullettoken, debug):
                 if "link" not in state or "state" not in state["link"]:
                     error = True;
                 if error == False:
-                    if state["overlayType"] == "MANUAL":
+                    if state["overlayType"] == "MANUAL" and state["overlay"]["setting"]["power"] != "OFF" and state["overlay"]["setting"]["temperature"]["celsius"] > 21:
                         manual_setting_alert(zone, state, pb)
                     if state["link"]["state"] != "ONLINE":
                         offline_alert(zone, state, pb)
