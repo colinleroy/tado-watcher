@@ -48,7 +48,7 @@ def main(username, password, pushbullettoken, debug):
                 if "link" not in state or "state" not in state["link"]:
                     error = True;
                 if error == False:
-                    if state["overlayType"] == "MANUAL" and state["overlay"]["setting"]["power"] != "OFF" and state["overlay"]["setting"]["temperature"]["celsius"] > 21:
+                    if state["overlayType"] == "MANUAL" and state["overlay"]["setting"]["power"] != "OFF" and int(state["overlay"]["setting"]["temperature"]["celsius"]) > 21:
                         manual_setting_alert(zone, state, pb)
                     if state["link"]["state"] != "ONLINE":
                         offline_alert(zone, state, pb)
